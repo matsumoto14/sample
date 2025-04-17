@@ -1,0 +1,26 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Allow public read access to video thumbnails
+    match /thumbnails/{thumbnail} {
+      allow read: if true;
+    }
+    
+    // Allow authenticated users to read video content they've purchased or have subscription access to
+    match /videos/{videoId}/{fileName} {
+      allow read: if request.auth != null && (
+        // Check if user has purchased this video
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)/purchases/$(videoId)) ||
+        // Or check if user has an active subscription
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)/subscriptions/{subscriptionId}) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)/subscriptions/{subscriptionId}).data.status == "active"
+      );
+    }
+    
+    // Allow admins to upload and manage content
+    match /{allPaths=**} {
+      allow read, write: if request.auth != null && 
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+  }
+}

@@ -1,0 +1,30 @@
+FROM node:18-slim
+
+WORKDIR /app
+
+# Install necessary dependencies for development environment
+RUN apt-get update && apt-get install -y \
+    git \
+    procps \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy package.json and package-lock.json
+COPY package.json package-lock.json* ./
+
+# Install dependencies
+RUN npm install
+
+# Copy the rest of the application
+COPY . .
+
+# Expose port 3000
+EXPOSE 3000
+
+# Set environment variables
+ENV PORT 3000
+ENV NODE_ENV development
+ENV NEXT_TELEMETRY_DISABLED 1
+
+# Start the development server with hot reloading
+CMD ["npm", "run", "dev"]

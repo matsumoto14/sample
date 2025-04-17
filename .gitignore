@@ -100,7 +100,7 @@ dist
 # vuepress build output
 .vuepress/dist
 
-# vuepress v2.x temp and cache directory
+# vitepress v2.x temp and cache directory
 .temp
 .cache
 
@@ -134,3 +134,43 @@ dist
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*
+
+# Firebase emulator data
+firebase-data/
+firebase-debug.log
+firebase-debug.*.log
+ui-debug.log
+
+# Docker volumes
+docker-volumes/
+.docker/
+
+# Service account keys
+*-firebase-adminsdk-*.json
+*-service-account.json
+
+# Stripe CLI
+.stripe/
+
+# Vimeo
+.vimeo-cache/
+
+# Local development
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Build artifacts
+build/
+dist/
+*.zip
+*.tar.gz
+
+# Secrets and credentials
+*.pem
+*.key
+*.p8
+*.p12

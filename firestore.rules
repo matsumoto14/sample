@@ -1,0 +1,48 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Allow authenticated users to read their own user document
+    match /users/{userId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow create: if request.auth != null && request.auth.uid == userId;
+      allow update: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Allow authenticated users to read video details
+    match /videos/{videoId} {
+      allow read: if true; // Public read access for video listings
+      
+      // Only allow access to full video content if user has purchased it or has an active subscription
+      match /content/{contentId} {
+        allow read: if request.auth != null && (
+          exists(/databases/$(database)/documents/users/$(request.auth.uid)/purchases/$(videoId)) ||
+          exists(/databases/$(database)/documents/users/$(request.auth.uid)/subscriptions/{subscriptionId}) &&
+          get(/databases/$(database)/documents/users/$(request.auth.uid)/subscriptions/{subscriptionId}).data.status == "active"
+        );
+      }
+    }
+    
+    // Allow authenticated users to read and write their own purchases
+    match /users/{userId}/purchases/{purchaseId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      // Purchase creation is handled by server-side functions after payment
+    }
+    
+    // Allow authenticated users to read their own subscriptions
+    match /users/{userId}/subscriptions/{subscriptionId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      // Subscription creation is handled by server-side functions after payment
+    }
+    
+    // Allow authenticated users to read and write their own watch history
+    match /users/{userId}/watchHistory/{historyId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Admin access rules would be defined here
+    match /admin/{document=**} {
+      allow read, write: if request.auth != null && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+  }
+}

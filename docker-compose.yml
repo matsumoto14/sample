@@ -1,0 +1,80 @@
+version: "3.8"
+
+services:
+  # Next.js frontend application
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: videohub-frontend
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/.next
+    environment:
+      - NODE_ENV=development
+      - NEXT_PUBLIC_FIREBASE_API_KEY=${NEXT_PUBLIC_FIREBASE_API_KEY}
+      - NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=${NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN}
+      - NEXT_PUBLIC_FIREBASE_PROJECT_ID=${NEXT_PUBLIC_FIREBASE_PROJECT_ID}
+      - NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=${NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET}
+      - NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=${NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID}
+      - NEXT_PUBLIC_FIREBASE_APP_ID=${NEXT_PUBLIC_FIREBASE_APP_ID}
+      - NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=${NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY}
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
+      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
+      - VIMEO_ACCESS_TOKEN=${VIMEO_ACCESS_TOKEN}
+      - VIMEO_CLIENT_ID=${VIMEO_CLIENT_ID}
+      - VIMEO_CLIENT_SECRET=${VIMEO_CLIENT_SECRET}
+      - FIREBASE_CLIENT_EMAIL=${FIREBASE_CLIENT_EMAIL}
+      - FIREBASE_PRIVATE_KEY=${FIREBASE_PRIVATE_KEY}
+      - NEXT_PUBLIC_FIREBASE_EMULATOR_HOST=firebase-emulator:8080
+    depends_on:
+      - firebase-emulator
+    networks:
+      - videohub-network
+    restart: unless-stopped
+
+  # Firebase emulator for local development
+  firebase-emulator:
+    image: andreysenov/firebase-tools:latest
+    container_name: videohub-firebase-emulator
+    ports:
+      - "4000:4000" # Emulator UI
+      - "8080:8080" # Firestore & other services
+      - "9099:9099" # Auth
+      - "5001:5001" # Functions
+      - "8085:8085" # Pub/Sub
+      - "9199:9199" # Storage
+    volumes:
+      - ./firebase.json:/home/node/firebase.json
+      - ./firestore.rules:/home/node/firestore.rules
+      - ./firestore.indexes.json:/home/node/firestore.indexes.json
+      - ./functions:/home/node/functions
+      - ./firebase-data:/home/node/.cache/firebase/emulators
+    environment:
+      - FIREBASE_PROJECT_ID=${NEXT_PUBLIC_FIREBASE_PROJECT_ID}
+    command: firebase emulators:start --project ${NEXT_PUBLIC_FIREBASE_PROJECT_ID} --import=/home/node/.cache/firebase/emulators --export-on-exit
+    networks:
+      - videohub-network
+    restart: unless-stopped
+
+  # Mock Stripe webhook service
+  stripe-mock:
+    image: stripe/stripe-mock:latest
+    container_name: videohub-stripe-mock
+    ports:
+      - "12111:12111" # HTTP
+      - "12112:12112" # HTTPS
+    networks:
+      - videohub-network
+    restart: unless-stopped
+
+networks:
+  videohub-network:
+    driver: bridge
+
+volumes:
+  firebase-data:
+    driver: local
